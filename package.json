@@ -1,0 +1,27 @@
+{
+  "name": "vue-source",
+  "version": "1.0.0",
+  "description": "vue手写源码",
+  "main": "index.js",
+  "scripts": {
+    "serve": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zengkaiz/vue-source.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zengkaiz/vue-source/issues"
+  },
+  "homepage": "https://github.com/zengkaiz/vue-source#readme",
+  "devDependencies": {
+    "@babel/core": "^7.10.3",
+    "@babel/preset-env": "^7.10.3",
+    "rollup": "^2.17.1",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-serve": "^1.0.1"
+  }
+}
