@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script> 
+        function observe(data){
+            if(typeof data !== 'object' || data === null) {
+                return
+            }
+            if(Array.isArray(data)) {
+                // Object.setPrototypeof() 方法指定一个对象的原型到另一个对象上
+                Object.setPrototypeOf(data,arrayMethods)
+                observeArray(data)
+            } else {
+                oberveObj(data)
+            }
+        }
+
+        const originalArrayMethods = Array.prototype
+        const arrayMethods = Object.create(originalArrayMethods)
+        let methods = ['push', 'pop', 'shift', 'unshift', 'sort', 'reserve', 'splice']
+        methods.forEach(method => {
+            arrayMethods[method] = function(...args){
+                let result = originalArrayMethods[method].apply(this, args)
+                let inserted 
+                switch(method){
+                    case 'push':
+                    case 'unshift':
+                        inserted = args
+                        break
+                    case 'splice':
+                        inserted = args.slice(2)
+                        break
+                    default:
+                        break
+                }
+                notifyUpdate()
+                inserted && observeArray(inserted)
+                return result
+            }
+        })
+
+        function observeArray(data){
+            for(let i=0; i<data.length; i++){
+                observe(data[i])
+            }
+        }
+
+        function oberveObj(data){
+
+            Object.keys(data).forEach(key =>{
+                defineProperty(data, key, data[key])
+            })
+        }
+
+        function defineProperty(data, key, value) {
+            observe(value)  // 传入的值继续是对象的话采用递归
+            Object.defineProperty(data, key ,{
+                get(){
+                    return value
+                },
+                set(newValue) {
+                    if(newValue == value) return
+                    observe(newValue)  // 监控新设置的值是否是对象 也得监听
+                    notifyUpdate()
+                    value = newValue
+                }
+            })
+        }
+
+        function notifyUpdate() {
+            console.log('更新视图')
+        }
+
+        const data = { name: 'zack', age: 28, money: {money:1}, girlFriend:[1,2,3,{c:1}]}
+        observe(data)
+
+        data.girlFriend.push('ll')
+        data.money.money = 100000
+        data.money = {money1: 2}
+        data.girlFriend[3].c=3
+
+    </script>
+</body>
+</html>

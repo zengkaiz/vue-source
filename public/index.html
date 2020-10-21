@@ -14,7 +14,8 @@
             // 数据会被检测，响应式数据变化 我们对数据操作可以更新视图
             data(){
                 return { name : 'zack', girlFriend: [1,2,3,{a:1}]}  // 测试数组、对象及深度
-            }
+            },
+            template:`<div id="app" style="color:red;"><span>{{msg}}</span></div>`
         })
         vm._data.girlFriend.push({b:1}) // 测试数组新增
         console.log(vm)

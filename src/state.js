@@ -10,15 +10,19 @@ export function initState(vm){
     opts.props && initProps(vm)
     opts.method && initmethod(vm)
     opts.data && initData(vm)
-    // computed  watch 等等
+    opts.computed && initComputed(vm);
+    opts.watch && initWatch(vm);
 }
 function initProps(vm){}
 function initmethod(vm){}
-function initData(vm){
+function initData(vm) {
+    console.log(vm.$options.data);
     // 数据响应式原理
     let data = vm.$options.data
     // vm._data 代表检测后的数据
     data = vm._data = typeof data=== 'function' ? data.call(vm) : data;
-
+    // 用户改变了数据，驱动视图变化 MVVM 数据变化可以驱动视图变化
     observer(data)
 }
+function initComputed(vm) { }
+function initWatch(vm) {}
