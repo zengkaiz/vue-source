@@ -9,28 +9,27 @@ export function initMixin(Vue) {
       vm.$options = options;
       // 初始化状态
       initState(vm);
-
+      // 模板渲染
       if (vm.$options.el) {
-        // 模板渲染
         vm.$mount(vm.$options.el);
       }
     }
-    Vue.prototype.$mount = function(el){
-        el = document.querySelector(el)
+  Vue.prototype.$mount = function (el) {
+      const vm = this;
+      const opts = vm.$options;
+      el = document.querySelector(el)
 
-        // 如果同时会传入template和render 默认会采用render 
-        // 如果都没传则使用id=app的模板
-        const vm = this
-        const opts = vm.$options
-        
-        if(!opts.render){
-            let template = opts.template
-            if(!template && el){
-                template = el.outerHTML
-            }
-
-            const render = compileToFunctions(template)
-            opts.render = render
+      // 如果同时会传入template和render 默认会采用render 
+      // 如果都没传则使用id=app的模板
+    if (!opts.render) {
+      // 取出模板，对模板进行编译
+        let template = opts.template;
+        if (!template && el) {
+          template = el.outerHTML;
         }
+
+        const render = compileToFunctions(template);
+        opts.render = render;
+      }
     }
 }  
