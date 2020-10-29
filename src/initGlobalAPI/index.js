@@ -1,4 +1,4 @@
-import { mergeOptions} from '../utils'
+import { mergeOptions } from "../utils/index";
 
 export function initGlobalAPI(Vue) {
     // 整合了全局相关的内容
@@ -7,20 +7,4 @@ export function initGlobalAPI(Vue) {
     Vue.mixin = function (mixin) {
         this.options = mergeOptions(this.options, mixin)
     }
-    // 生命周期的合并策略
-    Vue.mixin({
-    //   a: 1,
-      beforeCreate() {
-        console.log("mixin 1");
-      },
-    });
-
-    Vue.mixin({
-        // b:2,
-        beforeCreate() {
-            console.log("mixin 2");
-        }
-    })
-
-    console.log(Vue.options)
 }

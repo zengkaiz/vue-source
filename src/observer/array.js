@@ -33,6 +33,9 @@ methods.forEach(method => {
                 break
         }
         inserted && ob.observerArray(inserted)
+        // 如果用户调用了数组方法，会通知更新
+        console.log("update")
+        ob.dep.notify()
         return result
     }
 })

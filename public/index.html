@@ -13,14 +13,33 @@
         el: "#app",
         // 数据会被检测，响应式数据变化 我们对数据操作可以更新视图
         data() {
-          return { name: "zack", girlFriend: [1, 2, 3, { a: 1 }] }; // 测试数组、对象及深度
+          return {
+            msg: "",
+            name: "zack",
+            girlFriend: [[1, 2, 4], 1, 2, 3, { a: 1 }],
+          }; // 测试数组、对象及深度
         },
-        template: `<div id="app" class="app" style="color:red;font-size:12px;"><span>hello,{{msg}},我是{{name}}</span></div>`,
+        beforeCreate() {
+          console.log("user");
+        },
+        created() {
+          console.log("created", this.$el);
+        },
+        beforeMount() {
+          console.log("beforeMount", this.$el);
+        },
+        mounted() {
+          console.log("mounted", this.$el);
+        },
+        template: `<div id="app" class="app" style="color:red;font-size:12px;"><span>hello,{{msg}}{{girlFriend}}</span></div>`,
       });
-      vm.girlFriend.push({ b: 1 }); // 测试数组新增
-      setTimeout(() => {
-        vm.msg = "vue2.0";
-        vm._update(vm._render());
+      vm.msg = "vue2.0";
+      vm.girlFriend[0].push({ b: 1 }); // 测试数组新增
+      vm.girlFriend[0].push({ c: 1 });
+      // 手动更新, 但是我们希望数据变化可以自动重新执行我们的渲染watcher
+      // vm._update(vm._render());
+      vm.$nextTick(() => {
+        console.log(vm.$el.innerHTML);
       });
     </script>
   </body>

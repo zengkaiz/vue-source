@@ -4,7 +4,7 @@
  * @returns {type} 返回值描述
  */
 import { observer } from './observer/index.js'
-import { proxy } from "./utils";
+import { proxy } from "./utils/index";
 
 export function initState(vm){
     const opts = vm.$options

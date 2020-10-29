@@ -1,8 +1,11 @@
-import {isObject, def} from '../utils'
-import {arrayMethods} from './array'
+import { isObject, def } from "../utils/index";
+import { arrayMethods } from './array'
+import Dep from './dep'
 
 class Observer {
     constructor(data) {
+      this.dep = new Dep()  // 给数组用
+
       // 给每一个监控过的对象新增一个__ob__属性
       // value.__ob__ = this 这种写法有风险
       def(data,"__ob__",this)
@@ -30,19 +33,48 @@ class Observer {
 
 }
 // vue2的性能问题：递归重写get和set   vue3里面的proxy解决了这个性能问题
-function defineReactice(data, key, value){
-    observer(value)     // 传入的值继续是对象的话采用递归
+function defineReactice(data, key, value) {
+    let dep = new Dep() // 给对象用
+    // 这里这个value可能是数组也可能是对象，返回的结果是oberver的实例
+    let childOb =  observer(value)     // 传入的值继续是对象的话采用递归
     Object.defineProperty(data, key, {
         enumerable: true,
-        get(){
-            return value
+        get() {
+            // console.log('取值')
+            if(Dep.target){
+                dep.depend()    // 如果当前有watcher，意味着我要将watcher存起来
+                if (childOb) {  // 数组的依赖收集
+                    childOb.dep.depend()
+                    // 如果数组中有嵌套数组
+                    if (Array.isArray(value)) {
+                        dependArray(value)
+                    }
+                }
+            }
+            return value    // 每个属性都有自己的watcher
         },
-        set(newValue){
+        set(newValue) {
+            // console.log("更新数据");
             if(newValue === value){return}
             observer(newValue) // 监控新设置的值是否是对象 也得监听
             value = newValue
+            dep.notify()    // 通知依赖的watcher来进行一个更新操作
         }
     })
+}
+/**
+ * 将数组中的每一个都取出来，数据变化后，也去更新视图
+ * @param {type} parameter 参数描述
+ * @returns {type} 返回值描述
+ */
+function dependArray(value) {
+    for (let i = 0; i < value.length; i++){
+        let current = value[i]  
+        current.__ob__ && current.__ob__.dep.depend()
+        if (Array.isArray(current)) {
+            dependArray(current);
+        }
+    }
 }
 
 export function observer(data){

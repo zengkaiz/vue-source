@@ -26,4 +26,3 @@ function vnode(tag, data, key, children, text) {
 // 2. 生成render方法
 // 3. 生成虚拟dom
 // 4. 生成真实dom
-// 5. 更新dom

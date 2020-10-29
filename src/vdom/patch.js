@@ -2,7 +2,6 @@ export function patch(oldVnode, vnode) {
     // 递归创建真实节点 替换掉老的节点
     // 1. 判断是更新还是要渲染
     const isRealElement = oldVnode.nodeType
-
     if (isRealElement) {
         const oldElm = oldVnode // div id="app"
         const parentElm = oldElm.parentNode // body
@@ -12,9 +11,12 @@ export function patch(oldVnode, vnode) {
         return el
     }
 }
-
+/**
+ * 创建节点
+ * @param {Object} vnode 节点
+ * @returns {type} 真实dom
+ */
 function createElm(vnode) {
-
     let { tag, children, key, data, text } = vnode
     if (typeof tag === 'string') {
         vnode.el = document.createElement(tag)
@@ -27,7 +29,10 @@ function createElm(vnode) {
     }
     return vnode.el
 }
-
+/**
+ * 更新属性
+ * @param {Object} vnode 节点
+ */
 function updateProperties(vnode) {
     let newProps = vnode.data || {}
     let el = vnode.el
@@ -42,5 +47,4 @@ function updateProperties(vnode) {
             el.setAttribute(key, newProps[key]);
         }
     }
-
 }
