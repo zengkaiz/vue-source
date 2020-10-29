@@ -1,8 +1,10 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = global || self, global.Vue = factory());
-}(this, (function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('.')) :
+  typeof define === 'function' && define.amd ? define(['.'], factory) :
+  (global = global || self, global.Vue = factory(global._));
+}(this, (function (_) { 'use strict';
+
+  _ = _ && Object.prototype.hasOwnProperty.call(_, 'default') ? _['default'] : _;
 
   function _typeof(obj) {
     "@babel/helpers - typeof";
@@ -40,6 +42,55 @@
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
     return Constructor;
+  }
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
   }
 
   function _slicedToArray(arr, i) {
@@ -110,6 +161,75 @@
       configurable: false,
       value: value
     });
+  }
+  function proxy(vm, source, key) {
+    Object.defineProperty(vm, key, {
+      get: function get() {
+        return vm[source][key];
+      },
+      set: function set(newValue) {
+        vm[source][key] = newValue;
+      }
+    });
+  }
+  var LIFECYCLE_HOOKS = ["beforeCreate", "created", "beforeMount", "mounted", "beforeUpdate", "updated", "beforeDestroy", "destroyed"];
+  var strats = {};
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strats[hook] = mergeHook;
+  }); // 合并生命周期钩子
+
+  /**
+   * desc 生命周期函数合并方法
+   * @param {Function} parentVal 父级生命周期值
+   * @param {Function} childVal 子级生命周期值
+   * @returns {Array} 生命周期函数合并后的数组
+   */
+
+  function mergeHook(parentVal, childVal) {
+    // 如果有子级 且 有父级 则父级合并子级
+    if (childVal) {
+      if (parentVal) {
+        return parentVal.concat(childVal);
+      } // 如果没有父级则直接返回数组包裹的子级 这样保证了 最后返回的肯定是一个数组
+      else {
+          return [childVal];
+        }
+    } // 如果没有子级则直接返回父级
+    else {
+        return parentVal;
+      }
+  }
+
+  function mergeOptions(parent, child) {
+    var options = {}; // 先合并父里面
+
+    for (var key in parent) {
+      mergeField(key);
+    }
+
+    for (var _key in child) {
+      // 如果已经合并过就不需要再合并了
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    } // 默认的合并策略 （部分属性需要特殊的合并方式）
+
+
+    function mergeField(key) {
+      if (strats[key]) {
+        return options[key] = strats[key](parent[key], child[key]);
+      }
+
+      if (_typeof(parent[key]) === "object" && _typeof(child[key]) === "object") {
+        options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
+      } else if (child[key] == null) {
+        options[key] = parent[key];
+      } else {
+        options[key] = child[key];
+      }
+    }
+
+    return options;
   }
 
   // data.__proto__ = arrayMethods    arrayMethods.__proto__ = oldArrayMethods 原型链查找
@@ -189,6 +309,7 @@
     observer(value); // 传入的值继续是对象的话采用递归
 
     Object.defineProperty(data, key, {
+      enumerable: true,
       get: function get() {
         return value;
       },
@@ -237,11 +358,15 @@
   function initmethod(vm) {}
 
   function initData(vm) {
-    console.log(vm.$options.data); // 数据响应式原理
-
+    // 数据响应式原理
     var data = vm.$options.data; // vm._data 代表检测后的数据
 
-    data = vm._data = typeof data === 'function' ? data.call(vm) : data; // 用户改变了数据，驱动视图变化 MVVM 数据变化可以驱动视图变化
+    data = vm._data = typeof data === 'function' ? data.call(vm) : data; // 为了让用户更好的使用取值，希望vm.xxx
+
+    for (var key in data) {
+      proxy(vm, '_data', key);
+    } // 用户改变了数据，驱动视图变化 MVVM 数据变化可以驱动视图变化
+
 
     observer(data);
   }
@@ -403,6 +528,11 @@
     var code = "_c(\"".concat(el.tag, "\",").concat(el.attrs.length ? genProps(el.attrs) : 'undefined').concat(children ? ",".concat(children) : '', ")");
     return code;
   }
+  /**
+   * 拼接子元素
+   * @param {Object} el 父元素
+   * @returns {String} 子元素字符串
+   */
 
   function genChildren(el) {
     var children = el.children;
@@ -417,7 +547,7 @@
   }
 
   function gen(node) {
-    if (node.type == 1) {
+    if (node.type === 1) {
       return generate(node);
     } else {
       var text = node.text; // 形如 a{{name}}b{{age}}c 转为 _v("a"+_s(name)+"b"+_s(age)+"c")
@@ -445,6 +575,12 @@
       return "_v(".concat(tokens.join('+'), ")");
     }
   }
+  /**
+   * 把属性拼成字符串
+   * @param {Array} attrs ast语法树的属性字段
+   * @returns {String} 属性字符串
+   */
+
 
   function genProps(attrs) {
     var str = '';
@@ -467,23 +603,24 @@
         })();
       }
 
-      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value));
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
     }
 
+    console.log("{".concat(str.slice(0, -1), "}"));
     return "{".concat(str.slice(0, -1), "}");
   }
 
   function compileToFunctions(template) {
     // 实现代码编译  ast语法树：用对象描述js语法  虚拟dom： 用对象来描述dom节点
     // 1. 解析html字符串，将html字符串转成ast语法树
-    var ast = parseHTML(template); // 2. 将ast语法树生成最终的render函数 ，就是字符串拼接（模板引擎:所有的模板引擎实现，都需要new Function + with)
+    var ast = parseHTML(template);
+    console.log("ast语法树:", ast); // 2. 将ast语法树生成最终的render函数 ，就是字符串拼接（模板引擎:所有的模板引擎实现，都需要new Function + with)
 
     var code = generate(ast);
     code = "with(this){return ".concat(code, "}");
-    console.log(code);
-    var render = new Function(code); // 将字符串转换为函数
+    var render = new Function(code); // 将字符串转换为函数 new Function + with，返回的是是虚拟dom
 
-    console.log(render);
+    console.log("render函数：", render);
     return render;
   }
   /**
@@ -520,6 +657,84 @@
    * }
    */
 
+  var Watcher = function Watcher() {
+    _classCallCheck(this, Watcher);
+  };
+
+  function patch(oldVnode, vnode) {
+    // 递归创建真实节点 替换掉老的节点
+    // 1. 判断是更新还是要渲染
+    var isRealElement = oldVnode.nodeType;
+
+    if (isRealElement) {
+      var oldElm = oldVnode; // div id="app"
+
+      var parentElm = oldElm.parentNode; // body
+
+      var el = createElm(vnode);
+      parentElm.insertBefore(el, oldElm.nextSibling);
+      parentElm.removeChild(oldElm);
+      return el;
+    }
+  }
+
+  function createElm(vnode) {
+    var tag = vnode.tag,
+        children = vnode.children,
+        key = vnode.key,
+        data = vnode.data,
+        text = vnode.text;
+
+    if (typeof tag === 'string') {
+      vnode.el = document.createElement(tag);
+      updateProperties(vnode);
+      children.forEach(function (child) {
+        return vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+
+    return vnode.el;
+  }
+
+  function updateProperties(vnode) {
+    var newProps = vnode.data || {};
+    var el = vnode.el;
+
+    for (var key in newProps) {
+      if (key === 'style') {
+        for (var styleName in newProps.style) {
+          el.style[styleName] = newProps.style[styleName];
+        }
+      } else if (key === 'class') {
+        el.className = newProps["class"];
+      } else {
+        el.setAttribute(key, newProps[key]);
+      }
+    }
+  }
+
+  function lifecycleMixin(Vue) {
+    Vue.prototype._update = function (vnode) {
+      vm.$el = patch(vm.$el, vnode);
+    };
+  }
+  function mountComponent(vm, el) {
+    // render
+    var options = vm.$options; // 真实的dom元素$el 替换el
+
+    vm.$el = el; // 渲染和更新页面方法
+
+    var updateComponent = function updateComponent() {
+      // vm._render() 通过解析好的render方法，返回虚拟dom； vm._update() 通过虚拟dom，返回真实dom
+      vm._update(vm._render());
+    }; // 渲染watcher 每个组件都有一个渲染watcher
+
+
+    new Watcher(vm, updateComponent, function () {}, true); // true 表示是一个渲染watcher
+  }
+
   function initMixin(Vue) {
     // 给vue的原型上添加一个init方法
     Vue.prototype._init = function (options) {
@@ -550,19 +765,107 @@
 
         var render = compileToFunctions(template);
         opts.render = render;
-      }
+      } // 渲染当前的组件 挂载这个组件
+
+
+      mountComponent(vm, el);
     };
   }
 
-  // vue的声明
+  function createElement(tag) {
+    var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var key = data.key;
+
+    if (key) {
+      delete data.key;
+    }
+
+    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      children[_key - 2] = arguments[_key];
+    }
+
+    return vnode(tag, data, key, children, undefined);
+  }
+  function createTextNode(text) {
+    return vnode(undefined, undefined, undefined, undefined, text);
+  }
+
+  function vnode(tag, data, key, children, text) {
+    return {
+      tag: tag,
+      data: data,
+      key: key,
+      children: children,
+      text: text
+    };
+  } // 1. 将template转换成ast语法树，
+  // 2. 生成render方法
+  // 3. 生成虚拟dom
+  // 4. 生成真实dom
+  // 5. 更新dom
+
+  function renderMixin(Vue) {
+    //  _c 创建元素的虚拟节点
+    // _v 创建文本的虚拟节点
+    // _s JSON.stringify
+    Vue.prototype._c = function () {
+      return createElement.apply(void 0, arguments);
+    };
+
+    Vue.prototype._v = function (text) {
+      return createTextNode(text);
+    };
+
+    Vue.prototype._s = function (val) {
+      return val == null ? '' : _typeof(val) === 'object' ? JSON.stringify(val) : val;
+    };
+
+    Vue.prototype._render = function () {
+      var vm = this;
+      var render = vm.$options.render;
+      var vnode = render.call(vm);
+      console.log("虚拟dom:", vnode);
+      return vnode;
+    };
+  }
+
+  function initGlobalAPI(Vue) {
+    // 整合了全局相关的内容
+    Vue.options = {};
+
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+    }; // 生命周期的合并策略
+
+
+    Vue.mixin({
+      //   a: 1,
+      beforeCreate: function beforeCreate() {
+        console.log("mixin 1");
+      }
+    });
+    Vue.mixin({
+      // b:2,
+      beforeCreate: function beforeCreate() {
+        console.log("mixin 2");
+      }
+    });
+    console.log(Vue.options);
+  }
 
   function Vue(options) {
-    // 初始化的操作
     this._init(options);
   } // 通过引入的方式，给vue原型上添加方法
 
 
-  initMixin(Vue);
+  initMixin(Vue); // 增添初始化方法
+
+  renderMixin(Vue); // 增添渲染方法，调用我们的render方法
+
+  lifecycleMixin(Vue); // 增添update方法，将虚拟dom渲染成真实dom
+  // 初始化全局的API
+
+  initGlobalAPI(Vue);
 
   return Vue;
 

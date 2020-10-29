@@ -32,7 +32,8 @@ class Observer {
 // vue2的性能问题：递归重写get和set   vue3里面的proxy解决了这个性能问题
 function defineReactice(data, key, value){
     observer(value)     // 传入的值继续是对象的话采用递归
-    Object.defineProperty(data,key, {
+    Object.defineProperty(data, key, {
+        enumerable: true,
         get(){
             return value
         },

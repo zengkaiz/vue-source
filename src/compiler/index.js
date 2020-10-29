@@ -6,12 +6,12 @@ export function compileToFunctions(template) {
     // 实现代码编译  ast语法树：用对象描述js语法  虚拟dom： 用对象来描述dom节点
     // 1. 解析html字符串，将html字符串转成ast语法树
     let ast = parseHTML(template);
+    console.log("ast语法树:", ast)
     // 2. 将ast语法树生成最终的render函数 ，就是字符串拼接（模板引擎:所有的模板引擎实现，都需要new Function + with)
     let code = generate(ast);
     code = `with(this){return ${code}}`;
-    console.log(code);
-    let render = new Function(code); // 将字符串转换为函数
-    console.log(render);
+    let render = new Function(code); // 将字符串转换为函数 new Function + with，返回的是是虚拟dom
+    console.log("render函数：", render);
     return render;
 }   
 

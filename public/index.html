@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="../dist/vue.js"></script>
-    <title>Document</title>
+    <title>VUE-SOURCE</title>
   </head>
   <body>
     <div id="app"></div>
@@ -15,11 +15,13 @@
         data() {
           return { name: "zack", girlFriend: [1, 2, 3, { a: 1 }] }; // 测试数组、对象及深度
         },
-        template: `<div id="app" style="color:red;font-size:12px;"><span>hello,{{msg}}</span></div>`,
-        //  render(){ return _c('div', {id: 'app'}, _c('span', undefined, _v(_s(name))))}
+        template: `<div id="app" class="app" style="color:red;font-size:12px;"><span>hello,{{msg}},我是{{name}}</span></div>`,
       });
-      vm._data.girlFriend.push({ b: 1 }); // 测试数组新增
-      console.log(vm);
+      vm.girlFriend.push({ b: 1 }); // 测试数组新增
+      setTimeout(() => {
+        vm.msg = "vue2.0";
+        vm._update(vm._render());
+      });
     </script>
   </body>
 </html>
