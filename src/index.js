@@ -39,10 +39,10 @@ document.body.appendChild(relElement)
 
 let render2 = compileToFunctions(
   `<ul>
-        <li key="C">C</li>
         <li key="D">D</li>
-        <li key="E">E</li>
-        <li key="M">M</li>
+        <li key="B">B</li>
+        <li key="C">C</li>
+        <li key="A">A</li>
     </ul>`
 );
 let newVNode = render2.call(vm2);

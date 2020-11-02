@@ -13,9 +13,6 @@ export function queueWatcher(watcher) {
     queue.push(watcher);
     // vue里面的Vue.nextTick = promise / mutationObserver / setImmediate / setTimeout  优雅降级处理
     nextTick(flushSchedularQueue);
-    setTimeout(function () {
-      
-    }, 0);
   }
 }
 

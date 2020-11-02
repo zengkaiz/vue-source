@@ -27,10 +27,9 @@ export function patch(oldVnode, newVnode) {
 
         // 需要复用老的节点，替换掉老的属性
         let el = newVnode.el = oldVnode.el
-        // 更新属性
+        // 对比更新属性
         updateProperties(newVnode, oldVnode.data)
-
-        // 对比孩子
+        // 对比更新孩子
         // 老的有孩子，新的没孩子，直接删除
         // 老的没孩子，新的有孩子，直接插入
         let oldChildren = oldVnode.children || []
@@ -76,13 +75,12 @@ function updateChildren(parent, oldChildren, newChildren) {
     }
     let map = makeIndexByKey(oldChildren);
 
-    // 方案一： 先开始从头部进行比较
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
         if (!oldStartVnode) {
             oldStartVnode = oldChildren[++oldEndIndex]
         } else if (!oldEndVnode) {
             oldEndVnode = oldChildren[--oldEndIndex]
-            // 判断两个虚拟节点书否一致，用key和type判断
+            // 方案一： 先开始从头部进行比较。判断两个虚拟节点书否一致，用key和type判断
         } else if ((isSameVnode(oldStartVnode, newStartVnode))) {
             // 标签和key一致，但是属性可能不一致
             patch(oldStartVnode, newStartVnode)
@@ -93,13 +91,13 @@ function updateChildren(parent, oldChildren, newChildren) {
             patch(oldEndVnode, newEndVnode)
             oldEndVnode = oldChildren[--oldEndIndex]
             newEndVnode = newChildren[--newStartIndex]
-            // 方案三 头不一样 尾不一样 头移尾
+            // 方案三 头不一样 尾不一样 头移尾 新节点的头是老节点的尾
         } else if (isSameVnode(oldStartVnode, newEndVnode)) {
             patch(oldStartVnode, newEndVnode)
             parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling)   // 具备移动性
             oldStartVnode = oldChildren[++oldStartIndex]
             newEndVnode = newChildren[--newEndIndex]
-             // 方案四 头不一样 尾不一样 头移尾
+             // 方案四 头不一样 尾不一样 头移尾 老节点的头是新节点的头
         } else if (isSameVnode(oldEndVnode, newStartVnode)) {
             patch(oldEndVnode, newStartVnode)
             parent.insertBefore(oldEndVnode.el, oldStartVnode.el)   // 具备移动性
