@@ -3,6 +3,7 @@ export function patch(oldVnode, newVnode) {
     // 1. 判断是更新还是要渲染
     const isRealElement = oldVnode.nodeType
     if (isRealElement) {
+        // 真实元素
         const oldElm = oldVnode // div id="app"
         const parentElm = oldElm.parentNode // body
         let el = createElm(newVnode);
@@ -17,24 +18,23 @@ export function patch(oldVnode, newVnode) {
         if (oldVnode.tag !== newVnode.tag) {
             oldVnode.el.parentNode.replaceChild(createElm(newVnode), oldVnode.el)
         }
-        // 标签一致，都是文本  tag
+        // 标签一致且文本
         if (!oldVnode.tag) {
             if (oldVnode.text !== newVnode.text) {
                 oldVnode.el.textContent = newVnode.text
             }
         }
         // 标签一致且都是标签
-
         // 需要复用老的节点，替换掉老的属性
         let el = newVnode.el = oldVnode.el
         // 对比更新属性
         updateProperties(newVnode, oldVnode.data)
         // 对比更新孩子
-        // 老的有孩子，新的没孩子，直接删除
-        // 老的没孩子，新的有孩子，直接插入
+        // 1. 老的有孩子，新的没孩子，直接删除
+        // 2. 老的没孩子，新的有孩子，直接插入
+        // 3. 都有孩子
         let oldChildren = oldVnode.children || []
         let newChildren = newVnode.children || [];
-
         if (oldChildren.length > 0 && newChildren.length > 0) {
             // diff 核心 两个都有孩子 通过比较老孩子和新孩子 去操作el中的孩子
             updateChildren(el, oldChildren, newChildren)
@@ -49,13 +49,14 @@ export function patch(oldVnode, newVnode) {
         return el
     }
 }
+
 function isSameVnode(oldVnode, newVnode) {
     return (oldVnode.key === newVnode.key) && (oldVnode.tag === newVnode.tag)
 }
 
 function updateChildren(parent, oldChildren, newChildren) {
     // vue2.0 使用双指针的方式对比
-    // v-for 要有key key可以标识元素是否发生变化 前后key相同则可以服用这个元素
+    // v-for 要有key key可以标识元素是否发生变化 前后key相同则可以复用这个元素
     let oldStartIndex = 0   // 老的开始索引
     let oldStartVnode = oldChildren[0]  // 老的开始标签
     let oldEndIndex = oldChildren.length - 1    // 老的结尾索引
@@ -90,8 +91,8 @@ function updateChildren(parent, oldChildren, newChildren) {
         } else if (isSameVnode(oldEndVnode, newEndVnode)) {
             patch(oldEndVnode, newEndVnode)
             oldEndVnode = oldChildren[--oldEndIndex]
-            newEndVnode = newChildren[--newStartIndex]
-            // 方案三 头不一样 尾不一样 头移尾 新节点的头是老节点的尾
+            newEndVnode = newChildren[--newEndIndex]
+            // 方案三 头不一样 尾不一样 将头移到尾 新节点的头是老节点的尾
         } else if (isSameVnode(oldStartVnode, newEndVnode)) {
             patch(oldStartVnode, newEndVnode)
             parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling)   // 具备移动性
@@ -113,18 +114,18 @@ function updateChildren(parent, oldChildren, newChildren) {
                 let moveNode = oldChildren[moveIndex]
                 oldChildren[moveIndex] = null   // 占位 删除的话会导致数组塌陷
                 // 找到的话插入到老节点的最前面
+                parent.insertBefore(moveNode.el, oldStartVnode.el);
                 patch(moveNode, newStartVnode);
-                parent.insertBefore(moveNode.el, oldStartVnode.el); 
             }
             newStartVnode = newChildren[++newStartIndex]
         }
-        
     }
     // 说明老的已经循环完了，剩下的新的应该追加
     if (newStartIndex <= newEndIndex) {
+        let ele = newChildren[newEndIndex+1] == null ? null : newChildren[newEndIndex+1].el
         for (let i = newStartIndex; i <= newEndIndex; i++){
-            console.log(createElm(newChildren[i]));
-            parent.appendChild(createElm(newChildren[i]));
+            // parent.appendChild(createElm(newChildren[i]));
+            parent.insertBefore(createElm(newChildren[i]), ele)
         }
     }
     // 此时新的已经循环完了，剩下的老的是应该删除的。
