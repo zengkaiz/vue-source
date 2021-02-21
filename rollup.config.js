@@ -22,6 +22,6 @@ export default {
             openPage: '/public/index.html', // 默认打开html的路径
             port: 3000,
             contentBase: ''
-        }):null
+        }): null
     ]
 }

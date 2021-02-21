@@ -46,7 +46,6 @@ function gen(node) {
         if (lastIndex < text.length) {
             tokens.push(JSON.stringify(text.slice(lastIndex)))
         }
-        console.log(tokens)
         return `_v(${tokens.join('+')})`
     }
 }
@@ -69,7 +68,6 @@ function genProps(attrs) {
         }
         str += `${attr.name}:${JSON.stringify(attr.value)},`
     }
-    console.log(`{${str.slice(0, -1)}}`);
     return `{${str.slice(0,-1)}}`
 }
 

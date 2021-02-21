@@ -655,7 +655,6 @@
         tokens.push(JSON.stringify(text.slice(lastIndex)));
       }
 
-      console.log(tokens);
       return "_v(".concat(tokens.join('+'), ")");
     }
   }
@@ -690,7 +689,6 @@
       str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
     }
 
-    console.log("{".concat(str.slice(0, -1), "}"));
     return "{".concat(str.slice(0, -1), "}");
   }
 
@@ -847,6 +845,7 @@
     var isRealElement = oldVnode.nodeType;
 
     if (isRealElement) {
+      // 真实元素
       var oldElm = oldVnode; // div id="app"
 
       var parentElm = oldElm.parentNode; // body
@@ -861,7 +860,7 @@
       // 标签名不一致， 说明两个不一样的节点
       if (oldVnode.tag !== newVnode.tag) {
         oldVnode.el.parentNode.replaceChild(createElm(newVnode), oldVnode.el);
-      } // 标签一致，都是文本  tag
+      } // 标签一致且文本
 
 
       if (!oldVnode.tag) {
@@ -876,8 +875,9 @@
 
 
       updateProperties(newVnode, oldVnode.data); // 对比更新孩子
-      // 老的有孩子，新的没孩子，直接删除
-      // 老的没孩子，新的有孩子，直接插入
+      // 1. 老的有孩子，新的没孩子，直接删除
+      // 2. 老的没孩子，新的有孩子，直接插入
+      // 3. 都有孩子
 
       var oldChildren = oldVnode.children || [];
       var newChildren = newVnode.children || [];
@@ -905,7 +905,7 @@
 
   function updateChildren(parent, oldChildren, newChildren) {
     // vue2.0 使用双指针的方式对比
-    // v-for 要有key key可以标识元素是否发生变化 前后key相同则可以服用这个元素
+    // v-for 要有key key可以标识元素是否发生变化 前后key相同则可以复用这个元素
     var oldStartIndex = 0; // 老的开始索引
 
     var oldStartVnode = oldChildren[0]; // 老的开始标签
@@ -945,7 +945,7 @@
       } else if (isSameVnode(oldEndVnode, newEndVnode)) {
         patch(oldEndVnode, newEndVnode);
         oldEndVnode = oldChildren[--oldEndIndex];
-        newEndVnode = newChildren[--newStartIndex]; // 方案三 头不一样 尾不一样 头移尾 新节点的头是老节点的尾
+        newEndVnode = newChildren[--newEndIndex]; // 方案三 头不一样 尾不一样 将头移到尾 新节点的头是老节点的尾
       } else if (isSameVnode(oldStartVnode, newEndVnode)) {
         patch(oldStartVnode, newEndVnode);
         parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling); // 具备移动性
@@ -969,8 +969,8 @@
           oldChildren[moveIndex] = null; // 占位 删除的话会导致数组塌陷
           // 找到的话插入到老节点的最前面
 
-          patch(moveNode, newStartVnode);
           parent.insertBefore(moveNode.el, oldStartVnode.el);
+          patch(moveNode, newStartVnode);
         }
 
         newStartVnode = newChildren[++newStartIndex];
@@ -979,9 +979,11 @@
 
 
     if (newStartIndex <= newEndIndex) {
+      var ele = newChildren[newEndIndex + 1] == null ? null : newChildren[newEndIndex + 1].el;
+
       for (var i = newStartIndex; i <= newEndIndex; i++) {
-        console.log(createElm(newChildren[i]));
-        parent.appendChild(createElm(newChildren[i]));
+        // parent.appendChild(createElm(newChildren[i]));
+        parent.insertBefore(createElm(newChildren[i]), ele);
       }
     } // 此时新的已经循环完了，剩下的老的是应该删除的。
 
@@ -989,7 +991,6 @@
     if (oldStartIndex <= oldEndIndex) {
       for (var _i = oldStartIndex; _i <= oldEndIndex; _i++) {
         var child = oldChildren[_i];
-        console.log(child);
 
         if (child != null) {
           parent.removeChild(child.el);
@@ -1007,16 +1008,20 @@
   function createElm(vnode) {
     var tag = vnode.tag,
         children = vnode.children,
-        key = vnode.key,
+        text = vnode.text,
         data = vnode.data,
-        text = vnode.text;
+        key = vnode.key; // 如果tag是string的话 那么当前的这个节点则是元素节点 否则为文本节点
 
-    if (typeof tag === 'string') {
+    if (typeof tag == "string") {
+      // 创建元素 将虚拟节点和真实节点做一个映射关系 （后面diff时如果元素相同则可以直接复用老元素）
       vnode.el = document.createElement(tag);
-      updateProperties(vnode);
-      children.forEach(function (child) {
-        return vnode.el.appendChild(createElm(child));
-      });
+      updateProperties(vnode); // 递归调用当前函数 添加子节点
+
+      if (children.length > 0) {
+        children.forEach(function (child) {
+          vnode.el.append(createElm(child));
+        });
+      }
     } else {
       vnode.el = document.createTextNode(text);
     }
@@ -1220,9 +1225,8 @@
   renderMixin(Vue); // 增添渲染方法，调用我们的render方法
 
   lifecycleMixin(Vue); // 增添update方法，将虚拟dom渲染成真实dom
-  // 初始化全局的API
 
-  initGlobalAPI(Vue); // ------------------------------ diff ---------------------------------
+  initGlobalAPI(Vue); // 初始化全局的API
   var vm1 = new Vue({
     data: {
       name: 'zengkaiz'
@@ -1233,10 +1237,11 @@
       name: "zack"
     }
   });
-  var render1 = compileToFunctions("<ul>\n        <li key=\"A\">A</li>\n        <li key=\"B\">B</li>\n        <li key=\"C\">C</li>\n        <li key=\"D\">D</li>\n    </ul>");
+  var render1 = compileToFunctions("<div id=\"a\" c=\"a\" style=\"background: red;color: white\">\n    <li key=\"A\">A</li>\n    <li key=\"B\">B</li>\n    <li key=\"C\">C</li>\n    <li key=\"D\">D</li>\n  </div>");
   var oldVNode = render1.call(vm1);
-  var relElement = createElm(oldVNode);
-  document.body.appendChild(relElement);
+  console.log('虚拟dom', oldVNode);
+  var realElement = createElm(oldVNode);
+  document.body.appendChild(realElement);
   var render2 = compileToFunctions("<ul>\n        <li key=\"D\">D</li>\n        <li key=\"B\">B</li>\n        <li key=\"C\">C</li>\n        <li key=\"A\">A</li>\n    </ul>");
   var newVNode = render2.call(vm2); // 没有虚拟dom和diff算法时， 都是直接重新渲染，强制重新更新页面（没有复用老的节点）
 

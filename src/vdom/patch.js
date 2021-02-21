@@ -132,7 +132,6 @@ function updateChildren(parent, oldChildren, newChildren) {
     if (oldStartIndex <= oldEndIndex) {
         for (let i = oldStartIndex; i <= oldEndIndex; i++){
             let child = oldChildren[i];
-            console.log(child);
             if (child != null) {
                 parent.removeChild(child.el);
             }
@@ -146,17 +145,22 @@ function updateChildren(parent, oldChildren, newChildren) {
  * @returns {type} 真实dom
  */
 export function createElm(vnode) {
-    let { tag, children, key, data, text } = vnode
-    if (typeof tag === 'string') {
-        vnode.el = document.createElement(tag)
-        updateProperties(vnode)
-        children.forEach(child => {
-            return vnode.el.appendChild(createElm(child));
-        })
-    } else {
-        vnode.el = document.createTextNode(text)
+  const { tag, children, text, data, key } = vnode;
+  // 如果tag是string的话 那么当前的这个节点则是元素节点 否则为文本节点
+  if (typeof tag == "string") {
+    // 创建元素 将虚拟节点和真实节点做一个映射关系 （后面diff时如果元素相同则可以直接复用老元素）
+    vnode.el = document.createElement(tag);
+    updateProperties(vnode);
+    // 递归调用当前函数 添加子节点
+    if (children.length > 0) {
+      children.forEach((child) => {
+        vnode.el.append(createElm(child));
+      });
     }
-    return vnode.el
+  } else {
+    vnode.el = document.createTextNode(text);
+  }
+  return vnode.el;
 }
 /**
  * 更新属性
